@@ -1,4 +1,4 @@
-// stickit: jQuery plugin, v1.1.0 / 2013.11.19
+// stickit: jQuery plugin, v1.1.1 / 2013.12.30
 // Top-fixed element on scroll
 //
 // Neil Monroe (neil.monroe@gmail.com)
@@ -12,7 +12,12 @@
 //         unfixed: function () {
 //             console.log('I'm free!');
 //         },
+//         fullWidth: true
 //     );
+//
+// Change log:
+// 2013.12.30 - Add option to fix to left/right so content can be centered
+// 2013.11.19 - Initial release
 
 if ($.fn.stickit) _stickit = $.fn.stickit;
 
@@ -21,8 +26,9 @@ $.fn.stickit = function (options) {
         var el = this, $el = $(el), fixed = false;
 
         var defaults = {
-            fixed: null,    // function to execute when element is fixed to the viewport edge
-            unfixed: null   // function to execute when element's fixed state is restored
+            fixed: null,      // function to execute when element is fixed to the viewport edge
+            unfixed: null,    // function to execute when element's fixed state is restored
+            fullWidth: false  // full-width element; useful for centering content within the element
         };
         var opts = $.extend({}, defaults, options);
 
@@ -47,13 +53,15 @@ $.fn.stickit = function (options) {
             $el.before($spacer);
         }
 
-        // Attach fixed position check to scroll event
-        $(window).on('scroll', function (event) {
-            if ($(this).scrollTop() > original.top) {
+        var checkPosition = function (event) {
+            if ($(this).scrollTop() >= original.top) {
                 if (!fixed) {
                     fixed = true;
                     $el.addClass('stickit-fixed');
                     $el.css({ position: 'fixed', top: 0 });
+                    if (opts.fullWidth) {
+                        $el.css({ left: 0, right: 0 });
+                    }
                     $el.prev('.stickit-spacer').show();
 
                     // Execute any handlers
@@ -70,6 +78,12 @@ $.fn.stickit = function (options) {
                     $el.triggerHandler('stickit.unfixed');
                 }
             }
-        });
+        };
+
+        // Attach fixed position check to scroll event
+        $(window).on('scroll', $.debounce(checkPosition, 10));
+
+        // Check it initially
+        checkPosition.call(window);
     });
 };
